@@ -238,9 +238,6 @@ fn stamp_caret_lang(s: &mut Session, lang: &str) -> Result<()> {
 }
 
 pub(super) fn symbol(s: &mut Session, p: &Value) -> Result<Value> {
-    use crate::cmd::text::body_of;
-    use deckcraft_model::edit;
-
     let t = str_param(p, "text").ok_or_else(|| bad("insert.symbol", "missing `text`"))?.to_string();
     let font = match p.get("font") {
         None => None,
@@ -249,25 +246,6 @@ pub(super) fn symbol(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let st = s.doc()?;
     let sel = st.selection.text.as_ref().ok_or_else(|| bad("insert.symbol", "place the insertion point in text first"))?;
-    let body = body_of(st, sel).ok_or_else(|| bad("insert.symbol", "the text being edited is gone"))?;
-    let original = sel.resumed_props().cloned().unwrap_or_else(|| edit::props_at(body, sel.ordered().0));
-    let props = font.map(|font| {
-        let mut props = original.clone();
-        props.font = Some(font.clone());
-        props.font_ea = Some(font.clone());
-        props.font_cs = Some(font.clone());
-        props.font_sym = Some(font);
-        props
-    });
-    // Symbols are literal characters; do not turn a selected straight quote into a smart quote.
-    let result = crate::cmd::text::edit_text(s, |body, sel| {
-        let (a, b) = sel.ordered();
-        let at = edit::delete(body, a, b);
-        let end = edit::insert(body, at, &t, Some(props.unwrap_or_else(|| original.clone())));
-        sel.anchor = end;
-        sel.caret = end;
-        sel.typing_props = Some((end, original));
-        json!({"caret": [end.0, end.1]})
-    })?;
-    Ok(result)
+    crate::cmd::text::body_of(st, sel).ok_or_else(|| bad("insert.symbol", "the text being edited is gone"))?;
+    crate::cmd::text::insert_symbol(s, &t, font.as_deref())
 }

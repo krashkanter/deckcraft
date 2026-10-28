@@ -107,6 +107,40 @@ pub(crate) fn insert_text(s: &mut Session, text: &str, props: Option<RunProps>) 
     Ok(json!({"caret": [pos.0, pos.1]}))
 }
 
+/// Insert literal symbols, keeping an optional symbol font local to this insertion.
+pub(crate) fn insert_symbol(s: &mut Session, text: &str, font: Option<&str>) -> Result<Value> {
+    let inherited = inherited_aligns_for_edit(s);
+    edit_text(s, |body, sel| {
+        let (a, b) = sel.ordered();
+        let resumed = sel.resumed_props().cloned();
+        let at = ed::delete(body, a, b);
+        // Match ordinary insertion: replacement inherits the remaining text; a collapsed
+        // caret at a hyperlink's end resumes without its link.
+        let original = resumed
+            .or_else(|| if a != b { Some(ed::props_at(body, at)) } else { unlinked_at_link_end(body, at) })
+            .unwrap_or_else(|| ed::props_at(body, at));
+        let mut props = original.clone();
+        if let Some(font) = font {
+            props.font = Some(font.to_string());
+            props.font_ea = Some(font.to_string());
+            props.font_cs = Some(font.to_string());
+            props.font_sym = Some(font.to_string());
+        }
+        // Do not apply smart quotes or AutoCorrect to literal symbols.
+        let end = ed::insert(body, at, text, Some(props));
+        sel.anchor = end;
+        sel.caret = end;
+        sel.typing_props = Some((end, original));
+        let last = body.paragraphs.len().saturating_sub(1);
+        for pi in at.0..=end.0.min(last) {
+            if let Some(para) = body.paragraphs.get_mut(pi) {
+                promote_rtl_if_needed(para, &inherited);
+            }
+        }
+        json!({"caret": [end.0, end.1]})
+    })
+}
+
 /// Per outline level (0..=8), whether shape `id` on the current slide already resolves an
 /// alignment for its paragraphs (its own list style, the layout's or the master's). All `false`
 /// when the shape can't be resolved (notes, a shape that is gone).

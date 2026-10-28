@@ -94,3 +94,63 @@ fn input_method_text_after_a_symbol_resumes_the_surrounding_font() {
     assert_eq!(text.text(), "a©かb");
     assert_eq!(deckcraft_model::edit::props_at(&text, (0, 3)).font.as_deref(), Some("Inter"));
 }
+
+#[test]
+fn symbol_replacement_resumes_the_remaining_texts_formatting() {
+    for font in [None, Some("Liberation Mono")] {
+        let (mut s, id) = editing();
+        s.execute("text.select", &json!({"anchor": [0, 0], "caret": [0, 1]})).unwrap();
+        s.execute("format.font", &json!({"family": "Liberation Serif"})).unwrap();
+        let mut params = json!({"text": "\u{00a9}"});
+        if let Some(font) = font {
+            params["font"] = json!(font);
+        }
+        s.execute("insert.symbol", &params).unwrap();
+        assert_eq!(s.execute("format.state", &json!({})).unwrap()["font"], "Inter");
+        s.execute("text.insert", &json!({"text": "Z"})).unwrap();
+        let text = body(&s.doc().unwrap().doc, id);
+        assert_eq!(text.text(), "\u{00a9}Zb");
+        assert_eq!(deckcraft_model::edit::props_at(&text, (0, 1)).font.as_deref(), Some(font.unwrap_or("Inter")));
+        assert_eq!(deckcraft_model::edit::props_at(&text, (0, 2)).font.as_deref(), Some("Inter"));
+    }
+}
+
+#[test]
+fn symbol_at_a_hyperlink_end_does_not_extend_the_link() {
+    for at in [1, 2] {
+        let (mut s, id) = editing();
+        s.execute("text.select", &json!({"anchor": [0, 0], "caret": [0, at]})).unwrap();
+        s.execute("insert.hyperlink", &json!({"url": "https://example.com"})).unwrap();
+        s.execute("text.edit", &json!({"id": id.0, "at": [0, at]})).unwrap();
+        s.execute("insert.symbol", &json!({"text": "\u{00a9}", "font": "Liberation Serif"})).unwrap();
+        s.execute("text.insert", &json!({"text": "Z"})).unwrap();
+        let text = body(&s.doc().unwrap().doc, id);
+        assert!(deckcraft_model::edit::props_at(&text, (0, at)).link.is_some());
+        assert!(deckcraft_model::edit::props_at(&text, (0, at + 1)).link.is_none());
+        assert!(deckcraft_model::edit::props_at(&text, (0, at + 2)).link.is_none());
+    }
+}
+
+#[test]
+fn symbol_inside_a_hyperlink_preserves_the_link() {
+    let (mut s, id) = editing();
+    s.execute("text.select", &json!({"anchor": [0, 0], "caret": [0, 2]})).unwrap();
+    s.execute("insert.hyperlink", &json!({"url": "https://example.com"})).unwrap();
+    s.execute("text.edit", &json!({"id": id.0, "at": [0, 1]})).unwrap();
+    s.execute("insert.symbol", &json!({"text": "\u{00a9}", "font": "Liberation Serif"})).unwrap();
+    let text = body(&s.doc().unwrap().doc, id);
+    assert!(deckcraft_model::edit::props_at(&text, (0, 2)).link.is_some());
+}
+
+#[test]
+fn first_strong_rtl_symbol_promotes_the_paragraph() {
+    for symbol in ["\u{05d0}", "\u{0627}"] {
+        let (mut s, id) = editing();
+        s.execute("text.selectAll", &json!({})).unwrap();
+        s.execute("insert.symbol", &json!({"text": symbol})).unwrap();
+        let text = body(&s.doc().unwrap().doc, id);
+        assert_eq!(text.paragraphs[0].props.rtl, Some(true));
+        s.execute("edit.undo", &json!({})).unwrap();
+        assert_eq!(body(&s.doc().unwrap().doc, id).text(), "ab");
+    }
+}
