@@ -1,6 +1,6 @@
 # UI parity with PowerPoint
 
-> **Last reviewed:** 2026-10-28 · **Last updated:** 2026-10-28 · **Change:** trivial (Insert Symbol: legal symbols, fractions, superscripts and subscripts; #1131; scores unchanged) · **Target:** Microsoft PowerPoint for Mac 16.113 (Microsoft 365)
+> **Last reviewed:** 2026-10-28 · **Last updated:** 2026-10-28 · **Change:** minor (font-based Symbol browser with Unicode subsets, recent symbols and character-code entry; #1131; scores unchanged) · **Target:** Microsoft PowerPoint for Mac 16.113 (Microsoft 365)
 > **Last reviewed:** 2026-10-14 · **Last updated:** 2026-10-22 · **Change:** trivial (group fill and outline edits reach members, #1079; scores unchanged) · **Target:** Microsoft PowerPoint for Mac 16.113 (Microsoft 365)
 
 How DeckCraft looks and feels next to PowerPoint: the shell, the ribbon, menus, panes, dialogs,
@@ -63,7 +63,7 @@ menu colours taken from the theme tokens (menu `chrome`, page `card`).
 
 ## Panes and dialogs
 
-Insert Symbol includes legal symbols (©, ®, ™, ℠, ℗), fractions, superscripts and subscripts alongside the existing punctuation, currency, math, Greek, arrows and shapes. The symbol list scrolls independently of the Close button (#1131).
+Insert Symbol shows the selected font's characters in a virtualized grid, rendered in that font. Font and Unicode subset selectors, hexadecimal character-code entry, recent symbols and a Special Characters tab cover characters beyond a fixed palette. Insert keeps the dialog open; double-click also inserts. A chosen symbol font applies only to the inserted character, and subsequent typing resumes in the surrounding font. Both `.deckcraft` and `.pptx` retain the symbol's font (#1131).
 
 | Pane / dialog | PowerPoint | DeckCraft |
 |---|---|---|
@@ -171,7 +171,7 @@ consistency is open (#73, #56).
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-10-28 | trivial | Insert Symbol: legal symbols, fractions, superscripts and subscripts; scrollable list (#1131). Scores unchanged |
+| 2026-10-28 | minor | Font-based Symbol browser: font and Unicode subset selectors, character grid, hex-code entry, recent symbols and Special Characters (#1131). Scores unchanged |
 | 2026-10-24 | trivial | Table cells: dragging across cells selects a range of cells |
 | 2026-10-24 | trivial | Edit Points: Shift, Ctrl/Cmd or Alt/Option held while dragging a handle makes the point smooth, straight or corner |
 | 2026-10-24 | trivial | Columns dialog: the number of text columns and the spacing between them. Dialog count 41 → 42 |

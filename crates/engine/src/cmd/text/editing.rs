@@ -41,7 +41,7 @@ pub(super) fn edit(s: &mut Session, p: &Value) -> Result<Value> {
     }
     s.select(|_, sel| {
         sel.shapes = vec![id];
-        sel.text = Some(TextSel { shape: id, anchor: at, caret: at, cell, notes: false, line_end: None });
+        sel.text = Some(TextSel { shape: id, anchor: at, caret: at, cell, ..Default::default() });
         sel.cells = None;
     })?;
     Ok(json!({"id": id, "at": [at.0, at.1]}))
@@ -86,8 +86,10 @@ pub(crate) fn insert_text(s: &mut Session, text: &str, props: Option<RunProps>) 
     };
     let pos = edit_text(s, |body, t| {
         let (a, b) = t.ordered();
+        let resumed = t.resumed_props().cloned();
+        t.typing_props = None;
         let at = ed::delete(body, a, b);
-        let props = props.clone().or_else(|| if a != b { Some(ed::props_at(body, at)) } else { unlinked_at_link_end(body, at) });
+        let props = props.clone().or(resumed).or_else(|| if a != b { Some(ed::props_at(body, at)) } else { unlinked_at_link_end(body, at) });
         let c = ed::insert(body, at, &text, props);
         t.anchor = c;
         t.caret = c;
