@@ -85,6 +85,24 @@ fn explicit_formatting_after_a_symbol_applies_to_the_next_text() {
 }
 
 #[test]
+fn bold_after_a_symbol_without_a_font_formats_the_current_word() {
+    let (mut s, id) = editing();
+    s.execute("insert.symbol", &json!({"text": "x"})).unwrap();
+    s.execute("format.bold", &json!({})).unwrap();
+    let text = body(&s.doc().unwrap().doc, id);
+    assert_eq!(text.text(), "axb");
+    for index in 1..=3 {
+        assert_eq!(deckcraft_model::edit::props_at(&text, (0, index)).bold, Some(true));
+    }
+    s.execute("edit.undo", &json!({})).unwrap();
+    let text = body(&s.doc().unwrap().doc, id);
+    assert_eq!(text.text(), "axb");
+    for index in 1..=3 {
+        assert_ne!(deckcraft_model::edit::props_at(&text, (0, index)).bold, Some(true));
+    }
+}
+
+#[test]
 fn input_method_text_after_a_symbol_resumes_the_surrounding_font() {
     let (mut s, id) = editing();
     s.execute("insert.symbol", &json!({"text": "©", "font": "Liberation Serif"})).unwrap();

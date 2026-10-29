@@ -130,7 +130,8 @@ pub(crate) fn insert_symbol(s: &mut Session, text: &str, font: Option<&str>) -> 
         let end = ed::insert(body, at, text, Some(props));
         sel.anchor = end;
         sel.caret = end;
-        sel.typing_props = Some((end, original));
+        // Only a font override needs pending formatting; otherwise keep normal word formatting.
+        sel.typing_props = font.map(|_| (end, original));
         let last = body.paragraphs.len().saturating_sub(1);
         for pi in at.0..=end.0.min(last) {
             if let Some(para) = body.paragraphs.get_mut(pi) {
